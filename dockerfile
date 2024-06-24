@@ -8,8 +8,9 @@ WORKDIR /app
 
 COPY package.json package-lock.json* yarn.lock* ./
 
-# Instalación de dependencias
-RUN if [ -f yarn.lock ]; then \
+# Instalación de dependencias y Nest CLI
+RUN npm install -g @nestjs/cli && \
+    if [ -f yarn.lock ]; then \
       yarn install --frozen-lockfile; \
     elif [ -f package-lock.json ]; then \
       npm ci; \

@@ -20,6 +20,7 @@ cache:
 
 install:
   - npm install
+  - npm install -g @nestjs/cli  
 
 script:
   - npm run build
