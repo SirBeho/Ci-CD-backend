@@ -11,8 +11,8 @@ env:
   global:
     - NODE_ENV=production
     - AWS_REGION=us-west-2
-    - EB_APP_NAME=my-app
-    - EB_ENV_NAME=my-app-env
+    - EB_APP_NAME=nestjs-backend
+    - EB_ENV_NAME=Nestjs-backend-env
 
 cache:
   directories:
