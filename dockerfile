@@ -1,55 +1,50 @@
-# Define la imagen base
+# Etapa base
 FROM --platform=linux/amd64 node:21-alpine AS base
 
-# Etapa para instalación de dependencias
+# Etapa de dependencias
 FROM base AS deps
 
 WORKDIR /app
 
-# Copia los archivos de configuración de dependencias
-COPY package.json yarn.lock* package-lock.json*  ./
+COPY package.json package-lock.json* yarn.lock* ./
 
-# Instalación de dependencias utilizando yarn o npm, dependiendo del tipo de lockfile presente
-RUN \
-    if [ -f yarn.lock ]; then yarn --frozen-lockfile; \
-    elif [ -f package-lock.json ]; then npm ci; \
-    else echo "Lockfile not found." && exit 1; \
+# Instalación de dependencias
+RUN if [ -f yarn.lock ]; then \
+      yarn install --frozen-lockfile; \
+    elif [ -f package-lock.json ]; then \
+      npm ci; \
+    else \
+      echo "Archivo de bloqueo no encontrado" && exit 1; \
     fi
 
-# Etapa para construcción de la aplicación
+# Etapa de construcción
 FROM base AS builder
 
 WORKDIR /app
 
-# Copia los módulos de node_modules desde la etapa de dependencias
 COPY --from=deps /app/node_modules ./node_modules
-
-# Copia todo el código fuente del proyecto
 COPY . .
 
-# Compila la aplicación Nest.js
-RUN yarn build
+# Compilación del código
+RUN npm run build
 
-# Etapa para correr la aplicación
+# Etapa final
 FROM base AS runner
 
 WORKDIR /app
 
-# Configura el entorno de ejecución para producción
-ENV NODE_ENV production
+ENV NODE_ENV=production
 
-# Crea un grupo y un usuario para ejecutar la aplicación
+# Creación de usuario y grupo para seguridad
 RUN addgroup --system --gid 1001 aws-test \
-    && adduser --system --uid 101 user
+    && adduser --system --uid 101 usuario
 
-# Copia los módulos de node_modules y el código compilado desde la etapa de construcción
-COPY --from=builder --chown=user:aws-test /app/node_modules/ ./node_modules/
-COPY --from=builder --chown=user:aws-test /app/dist/ ./dist/
+# Copia de los archivos necesarios desde la etapa de construcción
+COPY --from=builder --chown=usuario:aws-test /app/node_modules ./node_modules
+COPY --from=builder --chown=usuario:aws-test /app/dist ./dist
 
-# Establece el usuario para ejecutar la aplicación
-USER user
+USER usuario
 
-# Expone el puerto 3000 (el puerto en el que se ejecutará la aplicación)
 EXPOSE 3000
 
 # Comando para ejecutar la aplicación
