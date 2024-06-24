@@ -1,0 +1,39 @@
+language: node_js
+node_js:
+  - '14'
+
+branches:
+  only:
+    - master
+    - main
+
+env:
+  global:
+    - NODE_ENV=production
+    - AWS_REGION=us-west-2
+    - EB_APP_NAME=my-app
+    - EB_ENV_NAME=my-app-env
+
+cache:
+  directories:
+    - node_modules
+
+install:
+  - npm install
+
+script:
+  - npm run build
+
+after_success:
+  - npm test
+
+deploy:
+  provider: elasticbeanstalk
+  access_key_id: $AWS_ACCESS_KEY_ID
+  secret_access_key: $AWS_SECRET_ACCESS_KEY
+  region: $AWS_REGION
+  app: $EB_APP_NAME
+  env: $EB_ENV_NAME
+  bucket_name: elasticbeanstalk-$AWS_REGION-$EB_APP_NAME
+  on:
+    branch: master
