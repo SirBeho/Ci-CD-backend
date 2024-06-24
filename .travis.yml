@@ -1,0 +1,42 @@
+dist: bionic
+language: node_js
+node_js: "16"
+
+services:
+  - docker
+
+
+branches:
+  only:
+    - main
+
+before_install:
+  - sudo apt-get install -y awscli
+
+before_script:
+  - aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+  - aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+  - aws configure set default.region $AWS_DEFAULT_REGION
+
+jobs:
+  include:
+    - stage: Backend Deployment
+      name: "Run Backend Deployment"
+      script:
+        - cd aws-test-backend
+        - aws ecr get-login-password --region $AWS_DEFAULT_REGION| docker login --username AWS --password-stdin $AWS_ECR_DOCKER_REGISTRY
+        - docker build -t $AWS_ECR_REGISTRY_NAME .
+        - docker tag $AWS_ECR_REGISTRY_NAME:latest $AWS_ECR_DOCKER_REGISTRY/$AWS_ECR_REGISTRY_NAME:latest
+        - docker push $AWS_ECR_DOCKER_REGISTRY/$AWS_ECR_REGISTRY_NAME:latest
+      
+      deploy:
+        provider: elasticbeanstalk
+        access_key_id: $AWS_ACCESS_KEY_ID
+        secret_access_key: $AWS_SECRET_ACCESS_KEY
+        region: $AWS_DEFAULT_REGION
+        app: $AWS_ELASTIC_BEANSTALK_APP_NAME
+        env: $AWS_ELASTIC_BEANSTALK_ENV_NAME
+        bucket_name: $AWS_ELASTIC_BEANSTALK_BUCKET_NAME
+
+        on:
+          branch: main
