@@ -10,7 +10,7 @@ branches:
 env:
   global:
     - NODE_ENV=production
-    - AWS_REGION=us-west-2
+    - AWS_REGION=us-east-1
     - EB_APP_NAME=nestjs-backend
     - EB_ENV_NAME=Nestjs-backend-env
 

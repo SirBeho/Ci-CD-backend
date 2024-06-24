@@ -1,52 +1,34 @@
 # Etapa base
-FROM --platform=linux/amd64 node:21-alpine AS base
-
-# Etapa de dependencias
-FROM base AS deps
-
-WORKDIR /app
-
-COPY package.json package-lock.json* yarn.lock* ./
-
-# Instalación de dependencias y Nest CLI
-RUN npm install -g @nestjs/cli && \
-    if [ -f yarn.lock ]; then \
-      yarn install --frozen-lockfile; \
-    elif [ -f package-lock.json ]; then \
-      npm ci; \
-    else \
-      echo "Archivo de bloqueo no encontrado" && exit 1; \
-    fi
+FROM node:14-alpine AS base
 
 # Etapa de construcción
-FROM base AS builder
+FROM base AS build
 
 WORKDIR /app
 
-COPY --from=deps /app/node_modules ./node_modules
+# Copiar archivos necesarios para la instalación de dependencias
+COPY package.json yarn.lock ./
+
+# Instalación de dependencias
+RUN yarn install --frozen-lockfile
+
+# Copiar el resto de los archivos del proyecto
 COPY . .
 
-# Compilación del código
-RUN npm run build
+# Compilar la aplicación React
+RUN yarn build
 
 # Etapa final
-FROM base AS runner
+FROM nginx:alpine
 
-WORKDIR /app
+# Copiar los archivos compilados desde la etapa de construcción a NGINX
+COPY --from=build /app/build /usr/share/nginx/html
 
-ENV NODE_ENV=production
+# Configuración opcional de NGINX (si se necesita)
+# COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Creación de usuario y grupo para seguridad
-RUN addgroup --system --gid 1001 aws-test \
-    && adduser --system --uid 101 usuario
+# Exponer el puerto 80 para que sea accesible desde el exterior
+EXPOSE 80
 
-# Copia de los archivos necesarios desde la etapa de construcción
-COPY --from=builder --chown=usuario:aws-test /app/node_modules ./node_modules
-COPY --from=builder --chown=usuario:aws-test /app/dist ./dist
-
-USER usuario
-
-EXPOSE 3000
-
-# Comando para ejecutar la aplicación
-CMD ["node", "dist/main.js"]
+# Comando para iniciar NGINX en primer plano
+CMD ["nginx", "-g", "daemon off;"]
